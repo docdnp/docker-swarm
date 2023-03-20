@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+docker run --rm -it -u $UID -v $PWD:/data plantuml/plantuml -tsvg ./docs/puml -o ../figures

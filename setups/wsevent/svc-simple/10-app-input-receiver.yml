@@ -1,0 +1,21 @@
+version: '3.7'
+
+services:
+  input-receiver:
+    image: thednp/wsevent:v0.2.1
+    labels:
+      svc: simple
+    environment:
+      SERVE_ENDPOINT:   :8080/sensor-events
+      CONSUME_ENDPOINT: 192.168.57.10:10080/sensor-data
+      NO_PRODUCE:       "true"
+    deploy:
+      mode: replicated
+      replicas: 3
+    networks:
+      - dack-net
+
+networks:
+  dack-net:
+    name: "dack-net"
+    external: true

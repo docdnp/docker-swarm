@@ -1,0 +1,41 @@
+version: '3.7'
+
+services:
+  dack-sender:
+    image: ixdotai/swarm-launcher:latest
+    entrypoint:
+      - bash
+    command:
+      - -c
+      - |-
+        sed -re 's|location /events|location /dack-events|' /tmp/nginx.conf > /tmp/nginx.dack-sender.proxy.conf;
+        /entrypoint.sh
+    labels:
+      svc: pseudopods
+    environment:
+      LAUNCH_PROJECT_NAME: pod-dack-sender
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+      - /tmp:/tmp
+    configs:
+      - source: dack-sender.composefile
+        target: /docker-compose.yml
+      - source: sidecar.proxy.conf
+        target: /tmp/nginx.conf
+    deploy:
+      mode: replicated
+      replicas: 3
+    networks:
+      - dack-net
+
+configs:
+  dack-sender.composefile:
+    file: ./wsevent/svc-pseudopods/composefiles/app-dack-sender.yml
+  sidecar.proxy.conf:
+    external: true
+    name: svc-pseudopods--init_sidecar.proxy.conf
+
+networks:
+  dack-net:
+    name: "dack-net"
+    external: true

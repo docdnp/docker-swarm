@@ -1,0 +1,10 @@
+{
+    "plantuml.server": "http://localhost:8888",
+    "plantuml.render": "PlantUMLServer",
+    "plantuml.includepaths": [
+        "${workspaceFolder}/3rdParty/"
+    ],
+    "plantuml.commandArgs": [
+        "-DRELATIVE_INCLUDE='${workspaceFolder}/3rdParty/'"
+    ],
+}

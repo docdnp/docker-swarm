@@ -1,0 +1,14 @@
+version: '3.7'
+
+services:
+  network-init:
+    labels:
+      svc: simple
+    image: hello-world
+    networks:
+      - dack-net
+
+networks:
+  dack-net:
+    name: "dack-net"
+    attachable: true

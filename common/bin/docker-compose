@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+docker --help | grep compose >&/dev/null && { docker compose "$@" ; exit $?; }
+command -v docker-compose >&/dev/null && { docker-compose "$@" ; exit $?; }
+echo "Error: Please ensure to install docker with compose plugin or docker-compose"
+

@@ -1,0 +1,4 @@
+
+#!/usr/bin/env bash
+
+docker run --rm -d -p 8888:8080 --name puml-preview plantuml/plantuml-server

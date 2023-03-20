@@ -1,0 +1,31 @@
+@startuml svc-simple
+
+skinparam node {
+borderColor Green
+backgroundColor<<Your Host>> LightBlue
+backgroundColor<<Swarm Node>> LightSkyBlue
+}
+
+skinparam component {
+    backgroundColor<<local service>> GhostWhite
+    backgroundColor<<cluster service>> LightGray
+}
+
+
+rectangle "Swarm Cluster" {
+    component "dack-sender" as dacksend <<cluster service>>
+    component "dacker" as dack <<cluster service>>
+    component "input-receiver" as inrec <<cluster service>>
+}
+
+rectangle "Your host" as lh {
+component "output-dest" as dest <<local service>>
+component "input-source" as source <<local service>>
+}
+
+source --U--> inrec
+inrec -R-> dack
+dack -R-> dacksend
+dacksend -D-> dest
+
+@enduml

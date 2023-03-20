@@ -1,0 +1,43 @@
+@startuml default-cluster
+
+skinparam node {
+borderColor Green
+backgroundColor<<Your Host>> LightBlue
+backgroundColor<<Swarm Node>> LightSkyBlue
+}
+
+skinparam component {
+    backgroundColor<<standalone mode>> GhostWhite
+    backgroundColor<<swarm mode>> LightGray
+}
+
+hide <<standalone mode>> stereotype
+
+
+rectangle "Swarm Cluster" {
+    node "test-node-1" as tn1 <<Swarm Node>> {
+    component "docker deamon" as dds1 <<swarm mode>>
+    }
+
+    node "test-node-2" as tn2 <<Swarm Node>> {
+    component "docker deamon" as dds2 <<swarm mode>>
+    }
+
+    node "test-node-3" as tn3 <<Swarm Node>> {
+    component "docker deamon" as dds3 <<swarm mode>>
+    }
+}
+
+node "localhost" as lh <<Your Host>> {
+component "docker-machine" as dd <<standalone mode>>
+}
+
+dds1 <--> dds2: "swarm"
+dds3 <--> dds2: "swarm"
+dds1 <--> dds3: "swarm"
+
+dd ~> tn1: ""
+dd ~> tn3: ""
+tn2 <~ dd: ""
+
+@enduml

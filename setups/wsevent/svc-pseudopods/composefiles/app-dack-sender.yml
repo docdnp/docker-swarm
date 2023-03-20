@@ -1,0 +1,36 @@
+version: '3.7'
+
+services:
+  dack-sender.service:
+    image: thednp/wsevent:v0.2.1
+    network_mode: container:dack-sender.proxy
+    depends_on: 
+      - dack-sender.proxy
+    labels:
+      svc: pseudopods
+    environment:
+      SERVE_ENDPOINT:     127.0.0.1:8080/events
+      CONSUME_ENDPOINT:   dacker.proxy:8081/dack-events
+      NO_PRODUCE:         "true"
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 1s
+        max_attempts: 2
+        window: 30s
+  dack-sender.proxy:
+    container_name: dack-sender.proxy
+    image: nginx:latest
+    volumes:
+      - type: bind
+        source: /tmp/nginx.dack-sender.proxy.conf
+        target: /etc/nginx/conf.d/default.conf
+        bind:
+          create_host_path: false
+    networks:
+      - dack-net
+
+networks:
+  dack-net:
+    name: "dack-net"
+    external: true

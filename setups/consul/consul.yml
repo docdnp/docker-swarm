@@ -1,0 +1,58 @@
+# source: https://itnext.io/enable-services-auto-discovery-in-docker-swarm-in-15-minutes-ae30f3877dc8
+version: '3.7'
+  
+services:
+  consul:
+    image: consul:latest
+    command: "agent -server -retry-join consul -client 0.0.0.0 -dev -bind '{{ GetInterfaceIP \"eth1\" }}' -ui"
+    environment:
+      - CONSUL_BIND_INTERFACE=eth1
+      - 'CONSUL_LOCAL_CONFIG={"server": true,"skip_leave_on_interrupt": true,"ui" : true,"bootstrap_expect": 1,"connect": { "enabled" : true } }'
+      - SERVICE_8500_NAME=consul.swarm.demo.com
+      - SERVICE_8500_NETWORK=envoy
+    ports:
+      - "8500:8500"
+      - "8600:8600"
+    networks:
+      - default
+      - envoy
+    deploy:
+      replicas: 1
+      placement:
+        constraints: [node.role == manager]
+  
+  rotor:
+    image: turbinelabs/rotor:0.19.0
+    ports:
+      - "50000:50000"
+    environment:
+      - ROTOR_CMD=consul
+      - ROTOR_CONSUL_DC=dc1
+      - ROTOR_CONSUL_HOSTPORT=consul:8500
+      - ROTOR_XDS_RESOLVE_DNS=true
+  
+  envoy:
+    image: envoyproxy/envoy:v1.13.0
+    ports:
+      - "9901:9901"
+      - "80:80"
+    configs:
+      - source: envoy
+        target: /etc/envoy/envoy.json
+        mode: 0640
+  
+    command: envoy -c /etc/envoy/envoy.json
+    deploy:
+      mode: global
+    networks:
+      - default
+      - envoy
+  
+configs:
+  envoy:
+    file: envoy.json
+  
+  
+networks:
+  envoy:
+    external: true

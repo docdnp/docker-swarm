@@ -1,0 +1,41 @@
+@startuml custom-cluster
+
+skinparam node {
+borderColor Green
+backgroundColor<<Your Host>> LightBlue
+backgroundColor<<Swarm Node>> LightSkyBlue
+}
+
+skinparam component {
+    backgroundColor<<standalone mode>> GhostWhite
+    backgroundColor<<swarm mode>> LightGray
+}
+
+hide <<standalone mode>> stereotype
+
+
+rectangle "Swarm Cluster" {
+    node "custom-prefix-node-1" as tn1 <<Swarm Node>> {
+    }
+    node "custom-prefix-node-2" as tn2 <<Swarm Node>> {
+    }
+    node "custom-prefix-node-3" as tn3 <<Swarm Node>> {
+    }
+    node "custom-prefix-node-4" as tn4 <<Swarm Node>> {
+    }
+    node "custom-prefix-node-5" as tn5 <<Swarm Node>> {
+    }
+}
+
+node "localhost" as lh <<Your Host>> {
+component "docker-machine" as dd <<standalone mode>>
+}
+
+
+dd ~D~> tn1: ""
+dd ~D~> tn3: ""
+dd ~D~> tn4: ""
+dd ~D~> tn5: ""
+tn2 <~U~ dd: ""
+
+@enduml

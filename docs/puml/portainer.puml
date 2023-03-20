@@ -1,0 +1,31 @@
+@startuml portainer-deployment
+
+skinparam node {
+borderColor Green
+backgroundColor<<Your Host>> LightBlue
+backgroundColor<<Swarm Node>> LightSkyBlue
+}
+
+skinparam component {
+    backgroundColor<<agent>> GhostWhite
+    backgroundColor<<UI>> LightGray
+}
+
+hide <<agent>> stereotype
+
+rectangle "Swarm Cluster" {
+    node "test-node-1" as tn1 <<Swarm Node>> {
+    component "portainer agent" as pa1 <<agent>>
+    component "portainer" as p <<UI>>
+    }
+
+    node "test-node-2" as tn2 <<Swarm Node>> {
+    component "portainer agent" as pa2 <<agent>>
+    }
+
+    node "test-node-3" as tn3 <<Swarm Node>> {
+    component "portainer agent" as pa3 <<agent>>
+    }
+}
+
+@enduml

@@ -1,0 +1,14 @@
+version: '3.7'
+
+services:
+  network-init:
+    image: hello-world
+    labels:
+      svc: consul
+    networks:
+      - dack-net-consul
+
+networks:
+  dack-net-consul:
+    name: "dack-net-consul"
+    attachable: true

@@ -1,0 +1,30 @@
+version: '3.7'
+
+services:
+  input-receiver:
+    image: thednp/wsevent:v0.2.1
+    labels:
+      svc: consul
+    environment:
+      SERVE_ENDPOINT:       :8080/sensor-events
+      CONSUME_ENDPOINT:     192.168.57.10:11080/sensor-data
+      NO_PRODUCE:           "true"
+      SERVICE_8080_NAME:    input-receiver.swarm.demo.com
+      SERVICE_8080_NETWORK: envoy
+    deploy:
+      mode: replicated
+      replicas: 3
+      placement:
+        preferences:
+          - spread: type
+    networks:
+      - dack-net-consul
+      - envoy
+
+networks:
+  dack-net-consul:
+    name: "dack-net-consul"
+    external: true
+  envoy:
+    external: true
+

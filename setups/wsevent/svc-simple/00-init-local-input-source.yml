@@ -1,0 +1,14 @@
+version: '3.7'
+
+services:
+  input-source:
+    image: thednp/wsevent:v0.2.1
+    labels:
+      svc: simple
+    environment:
+      SERVE_ENDPOINT: :80/sensor-data
+    ports:
+    - target: 80
+      published: 10080
+      protocol: tcp
+      mode: host

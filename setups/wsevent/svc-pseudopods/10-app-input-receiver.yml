@@ -1,0 +1,41 @@
+version: '3.7'
+
+services:
+  input-receiver:
+    image: ixdotai/swarm-launcher:latest
+    entrypoint:
+      - bash
+    command:
+      - -c
+      - |-
+        sed -re 's|location /events|location /sensor-events|' /tmp/nginx.conf > /tmp/nginx.input-receiver.proxy.conf;
+        /entrypoint.sh
+    labels:
+      svc: pseudopods
+    environment:
+      LAUNCH_PROJECT_NAME: pod-input-receiver
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+      - /tmp:/tmp
+    configs:
+      - source: input-receiver.composefile
+        target: /docker-compose.yml
+      - source: sidecar.proxy.conf
+        target: /tmp/nginx.conf
+    deploy:
+      mode: replicated
+      replicas: 3
+    networks:
+      - dack-net
+
+configs:
+  input-receiver.composefile:
+    file: ./wsevent/svc-pseudopods/composefiles/app-input-receiver.yml
+  sidecar.proxy.conf:
+    external: true
+    name: svc-pseudopods--init_sidecar.proxy.conf
+
+networks:
+  dack-net:
+    name: "dack-net"
+    external: true

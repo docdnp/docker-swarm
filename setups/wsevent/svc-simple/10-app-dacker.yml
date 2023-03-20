@@ -1,0 +1,21 @@
+version: '3.7'
+
+services:
+  dacker:
+    image: thednp/wsevent:v0.2.1
+    labels:
+      svc: simple
+    environment:
+      SERVE_ENDPOINT:   :8080/dack-events
+      CONSUME_ENDPOINT: input-receiver:8080/sensor-events
+      NO_PRODUCE:       "true"
+    deploy:
+      mode: replicated
+      replicas: 3
+    networks:
+      - dack-net
+
+networks:
+  dack-net:
+    name: "dack-net"
+    external: true

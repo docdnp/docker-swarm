@@ -1,0 +1,23 @@
+version: '3.7'
+
+services:
+  debug:
+    image: alpine/curl
+    entrypoint: sh
+    labels:
+      svc: consul
+    command:
+      - "-c"
+      - 'while true ; do sleep 3600 ; done'
+    networks:
+      - dack-net-consul
+    deploy:
+      mode: replicated
+      replicas: 3
+
+#curl --no-buffer --header "Connection: Upgrade" --header "Upgrade: websocket" --header "Host: example.com:80" --header "Origin: http://example.com:80" --header "Sec-WebSocket-Key: SGVsbG8sIHdvcmxkIQ=="  -header "Sec-WebSocket-Version: 13" http://dacker:8080/dack-events
+
+networks:
+  dack-net-consul:
+    name: "dack-net-consul"
+    external: true
