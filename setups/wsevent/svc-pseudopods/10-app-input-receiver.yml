@@ -25,12 +25,15 @@ services:
     deploy:
       mode: replicated
       replicas: 3
+      placement:
+        preferences:
+          - spread: type
     networks:
       - dack-net
 
 configs:
   input-receiver.composefile:
-    file: ./wsevent/svc-pseudopods/composefiles/app-input-receiver.yml
+    file: ./setups/wsevent/svc-pseudopods/composefiles/app-input-receiver.yml
   sidecar.proxy.conf:
     external: true
     name: svc-pseudopods--init_sidecar.proxy.conf
