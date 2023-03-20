@@ -178,7 +178,7 @@ This means that we can interpret the output as follows:
 ```
 8c3dfc84906f<- 8b75518a673b<- 14a8abe87696<- b562c52bb8ec<- 42675:   :80: tJPGQZjTbP
 ^^^^^^^^^^^^   ^^^^^^^^^^^^   ^^^^^^^^^^^^   ^^^^^^^^^^^^   ^^^^^    ^^^  ^^^^^^^^^^
-drack-sender   dracker        input-         input-source   counter  addr random
+dack-sender    dacker         input-         input-source   counter  addr random
                               receiver                      messages      string
 ```
 
@@ -254,7 +254,7 @@ dack-sender-3  dacker-2       input-receiver-2
 ...
 ```
 
-Again it a coincidence which path the data took depending on which service was first available to its consumers. 
+Again it is a coincidence which path the data took depending on which service was first available to its consumers. 
 
 ## Multiple services registered at Consul
 
