@@ -5,7 +5,7 @@ BASEDIR="$(dirname $0)"
 SWARM_NODE_PREFIX=${SWARM_NODE_PREFIX:-test}
 SWARM_SIZE=${SWARM_SIZE:-3}
 LOCALHOST=192.168.57.10
-DOCKERAUTH=
+DOCKERAUTH=${DOCKERAUTH:-}
 
 # wrappers and aliases
 shopt -s expand_aliases
