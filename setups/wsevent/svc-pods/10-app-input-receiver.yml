@@ -51,9 +51,9 @@ services:
 
 configs:
   input-receiver.composefile:
-    file: ./setups/wsevent/svc-pods/composefiles/app-input-receiver.yml
+    file: ./composefiles/app-input-receiver.yml
   sidecar.input-receiver.proxy.conf:
-    file: ./setups/wsevent/svc-pods/sidecars/nginx.input-receiver.conf
+    file: ./sidecars/nginx.input-receiver.conf
 
 networks:
   dack-net:

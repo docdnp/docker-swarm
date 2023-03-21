@@ -53,9 +53,9 @@ services:
 
 configs:
   dack-sender.composefile:
-    file: ./setups/wsevent/svc-pods/composefiles/app-dack-sender.yml
+    file: ./composefiles/app-dack-sender.yml
   sidecar.dack-sender.proxy.conf:
-    file: ./setups/wsevent/svc-pods/sidecars/nginx.dack-sender.conf
+    file: ./sidecars/nginx.dack-sender.conf
 
 networks:
   dack-net:

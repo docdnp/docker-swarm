@@ -5,16 +5,8 @@ services:
     labels:
       svc: simple
     image: hello-world
-    configs:
-      - source: sidecar.proxy.conf
-        target: /tmp/sidecar.proxy.conf
     networks:
       - dack-net
-
-configs:
-  sidecar.proxy.conf:
-    file: ./setups/wsevent/svc-pods/sidecars/nginx.conf
-
 
 networks:
   dack-net:

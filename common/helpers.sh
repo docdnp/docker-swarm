@@ -140,3 +140,73 @@ pnhelp () {
 
 # dummy svc logs
 dummy_svc_logs () { swarm_prefixed_hosts | foreach-ssh docker ps \| grep dummy \| sed -re 's/.*dummy/dummy/' \| xargs -iXXX bash -c "'A=\"XXX\" ; docker logs \"XXX\" 2>&1 | sed -re \"s|(.*)|\$A: \\1|\"'" ; }
+
+# setup and remove stacks and local compose deployments
+__stacks_setup () {
+    docker-machine use $(swarm_master)
+    local PROJECT="$(basename $BASEDIR)"
+    rm -f /tmp/$PROJECT 
+    for-swarm-configs \
+        | foreach echo docker stack deploy $DOCKERAUTH -c {} \
+                $PROJECT--$\(basename {} .yml \| sed -re "'s|^[0-9]+-\\\\|-.*||g'" \) \
+            | while read A; do bash -c "$A" || { touch /tmp/$PROJECT; break; }; done
+    [ -e /tmp/$PROJECT ] && rm /tmp/$PROJECT && return 1
+    return 0
+}
+
+__compose_setup () {
+    docker-machine use $(swarm_master)
+    local PROJECT="$(basename $BASEDIR)"
+    rm -f /tmp/$PROJECT 
+    docker-machine use --unset
+    for-compose-configs \
+        | foreach echo "docker-compose -f {} up -d" \
+            | while read A; do bash -c "$A" || { touch /tmp/$PROJECT; break; }; done
+    [ -e /tmp/$PROJECT ] && rm /tmp/$PROJECT && return 1
+    return 0
+}
+
+
+__remove-all-stacks () {
+    docker-machine use $(swarm_master)
+    local PROJECT="$(basename $BASEDIR)"
+    rm -f /tmp/$PROJECT 
+    for-swarm-configs -r \
+        | foreach echo docker stack rm \
+            $PROJECT--$\(basename {} .yml \| sed -re "'s|^[0-9]+-\\\\|-.*||g'" \) \
+        | while read A; do bash -c "$A" || { touch /tmp/$PROJECT; break; }; done
+    [ -e /tmp/$PROJECT ] && rm /tmp/$PROJECT && return 1
+    return 0
+}
+
+__stacks_remove () {
+    for i in {1..10} ; do
+        echo "Removing..."
+        __remove-all-stacks && sleep 1 \
+            && __remove-all-stacks >&/dev/null \
+            && return 0
+        sleep $i
+    done
+    return 1
+}
+
+__compose_remove () {
+    local PROJECT="$(basename $BASEDIR)"
+    docker-machine use --unset
+    for-compose-configs \
+        | foreach echo "docker-compose -f {} down" \
+        | while read A; do bash -c "$A" || { touch /tmp/$PROJECT; break; }; done
+    [ -e /tmp/$PROJECT ] && rm /tmp/$PROJECT && return 1
+    return 0
+}
+
+project-setup () { 
+    PROJECT="$(basename $BASEDIR)"
+    echo Setting up project: $PROJECT
+    __stacks_setup && __compose_setup ; 
+}
+project-remove () { 
+    PROJECT="$(basename $BASEDIR)"
+    echo Removing project: $PROJECT
+    __stacks_remove && __compose_remove ; 
+}

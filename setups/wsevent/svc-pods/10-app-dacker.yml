@@ -22,7 +22,7 @@ services:
         done;
         CONTAINER=$$(docker ps | grep $$PROXY | sed -re 's/.*\s//');
         sed -re "s/$$PROXY/$$CONTAINER/" \
-            /tmp//docker-compose.tpl.yml > /docker-compose.yml;
+            /tmp/docker-compose.tpl.yml > /docker-compose.yml;
         echo "++++++++++";
         /entrypoint.sh
     labels:
@@ -50,9 +50,9 @@ services:
 
 configs:
   dacker.composefile:
-    file: ./setups/wsevent/svc-pods/composefiles/app-dacker.yml
+    file: ./composefiles/app-dacker.yml
   sidecar.dacker.proxy.conf:
-    file: ./setups/wsevent/svc-pods/sidecars/nginx.dacker.conf
+    file: ./sidecars/nginx.dacker.conf
 
 networks:
   dack-net:
