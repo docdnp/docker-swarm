@@ -96,8 +96,21 @@ ensure_swarm_is_ready () {
 
 # handling service stacks
 stacks_manage () {
-    [ -z "$2" ] || ! [[ "$1" =~ ^setup|remove$ ]] && { 
-        log_usage "stacks_manage <setup|remove> <STACK_NAME> [force]" ; return 1
+    [ "$1" == "ls" ] && {
+        docker stack ls | grep -v NAME | awk '{print $1}' \
+            | sed -re 's/--.*//' | sort -u | foreach bash -c \
+                "find setups -type f -name '*.sh' | grep {} >&/dev/null && echo {}"
+        return
+    }
+    [ -z "$2" ] || ! [[ "$1" =~ ^setup|remove|redeploy$ ]] && { 
+        log_usage "stacks_manage <setup|remove|redeploy> <STACK_NAME> [force]" ; return 1
+    }
+    [ "$1" == redeploy ] && {
+        echo "Redeploying: $2"
+        shift
+        stacks_manage remove "$@" || return 1
+        stacks_manage setup  "$@" || return 1
+        return 0
     }
     find -name $1.sh | sort | grep "$2" \
         | foreach bash -c "source common/helpers.sh; log_emphasize Calling: {} $3; {} $3"
@@ -106,9 +119,15 @@ stacks_list   () { find setups -name setup.sh | sed -re 's|^./\|/setup.sh||g'; }
 
 ## bash_completion
 __stacks_manage () {
-    local IFS=$'\n' WORD="${COMP_WORDS[$COMP_CWORD]}"
+    local IFS=$'\n' WORD="${COMP_WORDS[$COMP_CWORD]}" PWORD="${COMP_WORDS[$((COMP_CWORD-1))]}"
     [ "$COMP_CWORD" == 1 ] && {
-        COMPREPLY=($(compgen -W "$(echo -e 'setup\nremove')"  -- "$WORD" ))
+        COMPREPLY=($(compgen -W "$(echo -e 'setup\nremove\nredeploy\nls')"  -- "$WORD" ))
+        return
+    }
+    [ "$COMP_CWORD" == 2 ] && [[ "$PWORD" =~ ^ls$ ]] && return
+    local CANDIDATES="$(stacks_manage ls)"
+    [ "$COMP_CWORD" == 2 ] && [[ "$PWORD" =~ ^remove|redeploy$ ]] && {
+        COMPREPLY=($(compgen -W "$CANDIDATES"  -- "$WORD" ))
         return
     }
     [ "$COMP_CWORD" == 2 ] && {
