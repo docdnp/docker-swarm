@@ -1,0 +1,47 @@
+@startuml svc-pseudopod-dataflow
+
+skinparam component {
+    backgroundColor<<standalone>> GhostWhite
+}
+
+skinparam rectangle {
+    backgroundColor<<cluster>> SeaShell
+    backgroundColor<<pseudopod>> FloralWhite
+    backgroundColor<<node>> AliceBlue
+}
+
+component "input-source" as source <<local service>>
+component "output-dest" as dest <<local service>>
+
+
+rectangle "test-node-X" as tn1 <<node>> {
+    rectangle "dack-sender" <<pseudopod>> {
+        component "dack-sender" as dacksend_1.1 <<standalone>>
+        component "dack-sender\nproxy sidecar" as dacksendproxy_1.1 <<standalone>>
+    }
+    rectangle "dacker" <<pseudopod>> {
+        component "dacker" as dack_1.1 <<standalone>>
+        component "dack-sender\nproxy sidecar" as dackproxy_1.1 <<standalone>>
+    }
+
+    rectangle "input-receiver" <<pseudopod>> {
+        component "input-receiver" as inrec_1.1 <<standalone>>
+        component "input-receiver\nproxy sidecar" as inrecproxy_1.1 <<standalone>>
+    }
+}
+
+
+dack_1.1 -R-> dackproxy_1.1: events
+dacksend_1.1 -L-> dacksendproxy_1.1: events
+inrec_1.1 -L-> inrecproxy_1.1: events
+
+
+inrecproxy_1.1 -D-> dack_1.1: events
+dackproxy_1.1 --> dacksend_1.1: events
+
+source -D-> inrec_1.1: events
+dacksendproxy_1.1 -D-> dest: events
+
+
+
+@enduml

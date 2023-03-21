@@ -25,12 +25,14 @@ Table of Contents
   - [Multiple services](#multiple-services)
     - [Rescale service instances](#rescale-service-instances)
     - [Trace the data flow](#trace-the-data-flow)
+  - [Simulate Pseudo-PODs and sidecars](#simulate-pseudo-pods-and-sidecars)
+    - [Trace the data flow](#trace-the-data-flow-1)
+  - [Simulate PODs and sidecars](#simulate-pods-and-sidecars)
   - [Multiple services registered at Consul](#multiple-services-registered-at-consul)
     - [Install Consul](#install-consul)
-  - [Simulate PODs and sidecars](#simulate-pods-and-sidecars)
 
 <!-- Created by https://github.com/ekalinin/github-markdown-toc -->
-<!-- Added by: dnp, at: Mo 20. Mär 12:49:21 CET 2023 -->
+<!-- Added by: dnp, at: Di 21. Mär 03:27:02 CET 2023 -->
 
 <!--te-->
 
@@ -256,6 +258,19 @@ dack-sender-3  dacker-2       input-receiver-2
 
 Again it is a coincidence which path the data took depending on which service was first available to its consumers. 
 
+
+## Simulate Pseudo-PODs and sidecars
+
+![img](docs/figures/svc-pseudopod.svg)
+
+![img](docs/figures/svc-pseudopod-create.svg)
+
+### Trace the data flow
+
+![img](docs/figures/svc-pseudopod-dataflow.svg)
+
+## Simulate PODs and sidecars
+
 ## Multiple services registered at Consul
 
 I've attempted to test how docker swarm and consul can play together.
@@ -276,5 +291,3 @@ consul/setup.sh
 ```
 
 The previous command prints the URL where you can access the Consul UI.
-
-## Simulate PODs and sidecars

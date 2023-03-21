@@ -1,0 +1,38 @@
+@startuml svc-pseudopod
+
+skinparam component {
+    backgroundColor<<standalone>> GhostWhite
+}
+
+skinparam rectangle {
+    backgroundColor<<cluster>> SeaShell
+    backgroundColor<<pseudopod>> FloralWhite
+    backgroundColor<<node>> AliceBlue
+}
+
+component "input-source" as source <<local service>>
+component "output-dest" as dest <<local service>>
+
+rectangle "Swarm Cluster" <<cluster>> {
+    rectangle "test-node-1" as tn1 <<node>> {
+    }
+    rectangle "test-node-2" as tn2 <<node>> {
+    }
+    rectangle "test-node-3" as tn3 <<node>> {
+    }
+}
+
+tn1 -[hidden]-> tn2
+tn2 -[hidden]-> tn3
+
+source -L-> tn1
+source -L-> tn2
+source -L-> tn3
+
+tn1 -L-> dest
+tn2 -L-> dest
+tn3 -L-> dest
+
+
+
+@enduml

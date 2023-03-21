@@ -1,0 +1,40 @@
+@startuml svc-pseudopod-create
+
+skinparam component {
+    backgroundColor<<standalone>> GhostWhite
+    backgroundColor<<service>> MintCream
+}
+
+skinparam rectangle {
+    backgroundColor<<cluster>> SeaShell
+    backgroundColor<<pseudopod>> FloralWhite
+    backgroundColor<<node>> AliceBlue
+}
+
+
+' component "input-source" as source <<local service>>
+' component "output-dest" as dest <<local service>>
+
+
+rectangle "test-node-X" as tn1 <<node>> {
+    component "dack-sender" as dacksend_podder <<service>>
+    component "dacker" as dacker_podder <<service>>
+    component "input-receiver" as inrec_podder <<service>>
+    rectangle "dack-sender" as dacksend_ppod <<pseudopod>> {
+    }
+    rectangle "dacker" as dacker_ppod <<pseudopod>> {
+    }
+    rectangle "input-receiver" as inrec_ppod <<pseudopod>> {
+    }
+}
+
+' source -> inrec_ppod: events
+' inrec_ppod -> dacker_ppod: events
+' dacker_ppod -> dacksend_ppod: events
+' dacksend_ppod -> dest: events
+
+inrec_podder ~U~> inrec_ppod: "creates / \nmonitors"
+dacker_podder ~U~> dacker_ppod: "creates / \nmonitors"
+dacksend_podder ~U~> dacksend_ppod: "creates / \nmonitors"
+
+@enduml
