@@ -74,8 +74,18 @@ swarm_docker_auth     () {
 }
 
 # loop compose files
-for-swarm-configs     () { ls -1 $BASEDIR/*.yml | sort $1 | grep -v local; }
-for-compose-configs   () { ls -1 $BASEDIR/*.yml | sort $1 | grep local; }
+__for_swarm_compose_loop () {
+    echo "[[[$@]]]" >> /tmp/XXX
+    local opt1="$1" opt2="$2" opt3="$3"
+    [ -n "$opt2" ] && [ -n "$opt3" ] && { ls -1 "$BASEDIR/$opt3"; return; }
+    [ -n "$opt1" ] && [ "$opt1" != -r ] && [ -n "$opt2" ] \
+        && { ls -1 "$BASEDIR/$opt2"; return; }
+    echo "[[[OPT1: $opt1]]]" >> /tmp/XXX
+    [ "$opt1" == -r ] || opt1=""
+    ls -1 $BASEDIR/*.yml | sort $opt1 | tee -a /tmp/XXX
+}
+for-swarm-configs     () { __for_swarm_compose_loop "$@" | grep -v local; }
+for-compose-configs   () { __for_swarm_compose_loop "$@" | grep local; }
 
 # virtual box information
 virtual-box-host-ip   () { echo $LOCALHOST; }
@@ -105,37 +115,53 @@ stacks_manage () {
     [ -z "$2" ] || ! [[ "$1" =~ ^setup|remove|redeploy$ ]] && { 
         log_usage "stacks_manage <setup|remove|redeploy> <STACK_NAME> [force]" ; return 1
     }
+    local basedir="$2" composefile
+    [ -f "$2" ] && basedir="$(dirname $2)" && composefile=$(basename "$2")
     [ "$1" == redeploy ] && {
-        echo "Redeploying: $2"
-        shift
-        stacks_manage remove "$@" || return 1
-        stacks_manage setup  "$@" || return 1
+        echo "Redeploying: $basedir $composefile"
+        stacks_manage remove "$basedir" "$composefile" || return 1
+        stacks_manage setup  "$basedir" "$composefile" || return 1
         return 0
     }
-    find -name $1.sh | sort | grep "$2" \
-        | foreach bash -c "source common/helpers.sh; log_emphasize Calling: {} $3; {} $3"
+    find setups -name $1.sh | sort | grep "$basedir" \
+        | foreach bash -c "source common/helpers.sh; log_emphasize Calling: {} $composefile $3; {} $basedir $composefile $3"
 }
-stacks_list   () { find setups -name setup.sh | sed -re 's|^./\|/setup.sh||g'; }
+stacks_list   () { local p='\1'; [ "$1" == / ] && p='\1\n\1/'; find setups -name setup.sh | sed -re 's|^./\|/setup.sh||g' -e 's|^(.*)$|'"$p"'|'; }
 
 ## bash_completion
 __stacks_manage () {
     local IFS=$'\n' WORD="${COMP_WORDS[$COMP_CWORD]}" PWORD="${COMP_WORDS[$((COMP_CWORD-1))]}"
+    {   echo " WORD: $WORD";
+        echo "PWORD: $PWORD";
+        echo "COMP_CWORD: $COMP_CWORD";
+    } >> /tmp/XXX
     [ "$COMP_CWORD" == 1 ] && {
         COMPREPLY=($(compgen -W "$(echo -e 'setup\nremove\nredeploy\nls')"  -- "$WORD" ))
         return
     }
     [ "$COMP_CWORD" == 2 ] && [[ "$PWORD" =~ ^ls$ ]] && return
-    local CANDIDATES="$(stacks_manage ls)"
     [ "$COMP_CWORD" == 2 ] && [[ "$PWORD" =~ ^remove|redeploy$ ]] && {
+        local CANDIDATES="$(stacks_manage ls) $(stacks_list)"
         COMPREPLY=($(compgen -W "$CANDIDATES"  -- "$WORD" ))
+        return
+    }
+    [ "$COMP_CWORD" == 2 ] && [[ "$WORD" =~ /$ ]] && [ -e "$WORD/setup.sh" ] && {
+        COMPREPLY=($(compgen -o default -W "$(find $(dirname $WORD) -name '*.yml')"  -- "$WORD" ))
         return
     }
     [ "$COMP_CWORD" == 2 ] && {
         COMPREPLY=($(compgen -W "$(stacks_list)"  -- "$WORD" ))
+        [ ${#COMPREPLY[@]} == 0 ] && [ -n "$(dirname $WORD)" ] && {
+            COMPREPLY=($(compgen -o default -W "$(find $(dirname $WORD) -name '*.yml')"  -- "$WORD" ))
+            return
+        }
+        [ ${#COMPREPLY[@]} == 1 ] && [ -e "${COMPREPLY[0]}"/setup.sh ] && 
+            COMPREPLY=($(compgen -W "$(stacks_list /)"  -- "$WORD" ))
         return
     }
-    [ "$COMP_CWORD" == 3 ] && {
-        COMPREPLY=($(compgen -W "$(echo 'force')"  -- "$WORD" ))
+    [ "$COMP_CWORD" == 3 ] && [[ "$PWORD" =~ /$ ]] && {
+        [[ "$PWORD" =~ /$ ]] && COMPREPLY=($(compgen -W "$(ls -1 $PWORD/)"  -- "$WORD" )) \
+            || COMPREPLY=($(compgen -W "$(echo 'force')"  -- "$WORD" ))
         return
     }
 }
@@ -157,30 +183,39 @@ pnhelp () {
         | sed -re 's|\(\).*\|alias \|=.*||g'
 }
 
-# dummy svc logs
-dummy_svc_logs () { swarm_prefixed_hosts | foreach-ssh docker ps \| grep dummy \| sed -re 's/.*dummy/dummy/' \| xargs -iXXX bash -c "'A=\"XXX\" ; docker logs \"XXX\" 2>&1 | sed -re \"s|(.*)|\$A: \\1|\"'" ; }
-
 # setup and remove stacks and local compose deployments
 __stacks_setup () {
     docker-machine use $(swarm_master)
-    local PROJECT="$(basename $BASEDIR)"
+    local PROJECT="$(basename $BASEDIR)" A
     rm -f /tmp/$PROJECT 
-    for-swarm-configs \
+    for-swarm-configs "$@" \
         | foreach echo docker stack deploy $DOCKERAUTH -c {} \
                 $PROJECT--$\(basename {} .yml \| sed -re "'s|^[0-9]+-\\\\|-.*||g'" \) \
-            | while read A; do bash -c "$A" || { touch /tmp/$PROJECT; break; }; done
+            | while read A; do 
+                bash -c "echo -e \"Executing: $A\"" 
+                bash -c "$A" || { 
+                    touch /tmp/$PROJECT
+                    break
+                }
+              done
     [ -e /tmp/$PROJECT ] && rm /tmp/$PROJECT && return 1
     return 0
 }
 
 __compose_setup () {
     docker-machine use $(swarm_master)
-    local PROJECT="$(basename $BASEDIR)"
+    local PROJECT="$(basename $BASEDIR)" A
     rm -f /tmp/$PROJECT 
     docker-machine use --unset
-    for-compose-configs \
+    for-compose-configs "$@" \
         | foreach echo "docker-compose -f {} up -d" \
-            | while read A; do bash -c "$A" || { touch /tmp/$PROJECT; break; }; done
+            | while read A; do 
+                bash -c "echo -e \"Executing: $A\"" 
+                bash -c "$A" || { 
+                    touch /tmp/$PROJECT
+                    break
+                }
+              done
     [ -e /tmp/$PROJECT ] && rm /tmp/$PROJECT && return 1
     return 0
 }
@@ -188,21 +223,28 @@ __compose_setup () {
 
 __remove-all-stacks () {
     docker-machine use $(swarm_master)
-    local PROJECT="$(basename $BASEDIR)"
+    local PROJECT="$(basename $BASEDIR)" A
     rm -f /tmp/$PROJECT 
-    for-swarm-configs -r \
+    for-swarm-configs -r "$@" \
         | foreach echo docker stack rm \
-            $PROJECT--$\(basename {} .yml \| sed -re "'s|^[0-9]+-\\\\|-.*||g'" \) \
-        | while read A; do bash -c "$A" || { touch /tmp/$PROJECT; break; }; done
+            $PROJECT--\$\(basename {} .yml \| sed -re "'s|^[0-9]+-\\\\|-.*||g'" \) \
+        | while read A; do 
+            bash -c "echo -e \"Executing: $A\"" 
+            bash -c "$A" || { 
+                touch /tmp/$PROJECT
+                break
+            }
+          done
     [ -e /tmp/$PROJECT ] && rm /tmp/$PROJECT && return 1
     return 0
 }
 
 __stacks_remove () {
     for i in {1..10} ; do
-        echo "Removing..."
-        __remove-all-stacks && sleep 1 \
-            && __remove-all-stacks >&/dev/null \
+        [ $i == 0 ] \
+            || log_emphasize "WARN: Failed to remove stack... [RETRY ($i/10)]"
+        __remove-all-stacks "$@" && sleep 1 \
+            && __remove-all-stacks "$@" >&/dev/null \
             && return 0
         sleep $i
     done
@@ -212,20 +254,26 @@ __stacks_remove () {
 __compose_remove () {
     local PROJECT="$(basename $BASEDIR)"
     docker-machine use --unset
-    for-compose-configs \
-        | foreach echo "docker-compose -f {} down" \
+    for-compose-configs "$@" \
+        | foreach echo "docker-compose -f {} down --remove-orphans" \
         | while read A; do bash -c "$A" || { touch /tmp/$PROJECT; break; }; done
     [ -e /tmp/$PROJECT ] && rm /tmp/$PROJECT && return 1
     return 0
 }
 
 project-setup () { 
+    [ -n "$1" ] && [ -f "$1/$2" ] && BASEDIR=$1
     PROJECT="$(basename $BASEDIR)"
-    echo Setting up project: $PROJECT
-    __stacks_setup && __compose_setup ; 
+    echo Setting up project: $PROJECT "$@"
+    __stacks_setup "$@" && __compose_setup "$@" \
+        || log_emphasize "FAIL: Couldn't setup project: $PROJECT $@" \
+        && return 1
 }
-project-remove () { 
+project-remove () {
+    [ -n "$1" ] && [ -f "$1/$2" ] && BASEDIR=$1
     PROJECT="$(basename $BASEDIR)"
-    echo Removing project: $PROJECT
-    __stacks_remove && __compose_remove ; 
+    echo Removing project: $PROJECT "$@"
+    __stacks_remove "$@" && __compose_remove "$@" \
+        || log_emphasize "FAIL: Couldn't remove project: $PROJECT $@" \
+        && return 1
 }

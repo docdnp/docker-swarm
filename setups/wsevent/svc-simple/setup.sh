@@ -3,7 +3,7 @@
 source common/helpers.sh
 ensure_command_exists docker-machine
 
-project-setup && \
+project-setup "$@" && \
 log_emphasize "To test services of $PROJECT, call:
 
     docker run --rm -it --network host thednp/wsevent \\
