@@ -1,0 +1,15 @@
+version: '3.7'
+
+services:
+  dack-sender.service:
+    image: thednp/wsevent:v0.2.1
+    network_mode: container:dack-sender-proxy
+    labels:
+      svc: pseudopods
+    environment:
+      SERVE_ENDPOINT:     127.0.0.1:8080/events
+      CONSUME_ENDPOINT:   ${STACK}_dacker-proxy:8081/dack-events
+      NO_PRODUCE:         "true"
+    deploy:
+      restart_policy:
+        condition: none

@@ -1,0 +1,60 @@
+version: '3.7'
+
+x-deploy: 
+  &common-deploy
+  mode: replicated
+  replicas: 3
+  placement:
+    preferences:
+      - spread: type
+
+services:
+  dacker:
+    image: ixdotai/swarm-launcher:latest
+    entrypoint:
+      - bash
+    command:
+      - -c
+      - |-
+        while true ; do 
+          sleep 1 ;
+          docker ps | grep $$PROXY && break ; 
+        done;
+        CONTAINER=$$(docker ps | grep $$PROXY | sed -re 's/.*\s//');
+        sed -re "s/$$PROXY/$$CONTAINER/" \
+            /tmp//docker-compose.tpl.yml > /docker-compose.yml;
+        echo "++++++++++";
+        /entrypoint.sh
+    labels:
+      svc: pseudopods
+    environment:
+      STACK: svc-pods--app
+      LAUNCH_PROJECT_NAME: pods-dacker
+      PROXY: dacker-proxy
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+    configs:
+      - source: dacker.composefile
+        target: /tmp/docker-compose.tpl.yml
+    deploy: 
+      << : *common-deploy
+  dacker-proxy:
+    image: nginx:latest
+    deploy: 
+      << : *common-deploy
+    configs:
+      - source: sidecar.dacker.proxy.conf
+        target: /etc/nginx/conf.d/default.conf
+    networks:
+      - dack-net
+
+configs:
+  dacker.composefile:
+    file: ./setups/wsevent/svc-pods/composefiles/app-dacker.yml
+  sidecar.dacker.proxy.conf:
+    file: ./setups/wsevent/svc-pods/sidecars/nginx.dacker.conf
+
+networks:
+  dack-net:
+    name: "dack-net"
+    external: true
