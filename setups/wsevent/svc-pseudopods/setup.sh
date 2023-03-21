@@ -7,6 +7,5 @@ project-setup && \
 log_emphasize "To test services of $PROJECT, call:
 
     docker run --rm -it --network host thednp/wsevent \\
-        -consume-address $(node_ips 1):10080 \\
-        -consume-path dackservice-events \\
-        --no-produce"
+        -consume-address $(node_ips 1):10080/dackservice-events --no-produce
+"
