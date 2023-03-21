@@ -28,6 +28,7 @@ Table of Contents
   - [Simulate Pseudo-PODs and sidecars](#simulate-pseudo-pods-and-sidecars)
     - [Trace the data flow](#trace-the-data-flow-1)
   - [Simulate PODs and sidecars](#simulate-pods-and-sidecars)
+    - [Trace the data flow](#trace-the-data-flow-2)
   - [Multiple services registered at Consul](#multiple-services-registered-at-consul)
     - [Install Consul](#install-consul)
 
@@ -270,6 +271,36 @@ Again it is a coincidence which path the data took depending on which service wa
 ![img](docs/figures/svc-pseudopod-dataflow.svg)
 
 ## Simulate PODs and sidecars
+
+### Trace the data flow
+
+Dump all paths taken:
+
+```
+swarm_prefixed_hosts  \
+ | foreach docker-machine ssh {} -- \
+    docker ps \
+     \| grep -v proxy \
+     \| grep svc.*app_ \
+     \| sed -re '"s/^(.)/{}\\t\\1/"' \
+      | awk '{print "echo -n "$1":; docker-machine ssh "$1" -- docker logs --tail 1 "$2}' \
+      | xargs -i bash -c '{}' 2>&1 \
+      | sed -re 's|^(test-node-.):.*true\) |\1 |' \
+            -e  's|[0-9]+: :.*||' \
+      | perl -ne '/^(?:.*?<-\s){3}\n$/ && print' \
+      | sort -u
+```
+
+Dump all services involved:
+
+```
+swarm_prefixed_hosts   \
+ | foreach docker-machine ssh {} -- \
+    docker ps \
+     \| grep proxy \
+     \| sed -re '"s/^(.)/{}\\t\\1/"' \
+      | awk '{print $1" "$2}'
+```
 
 ## Multiple services registered at Consul
 
