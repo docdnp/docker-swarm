@@ -13,7 +13,7 @@ services:
 
 configs:
   sidecar.proxy.conf:
-    file: ./setups/wsevent/svc-pseudopods/sidecars/nginx.conf
+    file: ./sidecars/nginx.conf
 
 
 networks:

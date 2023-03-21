@@ -33,7 +33,7 @@ services:
 
 configs:
   dacker.composefile:
-    file: ./setups/wsevent/svc-pseudopods/composefiles/app-dacker.yml
+    file: ./composefiles/app-dacker.yml
   sidecar.proxy.conf:
     external: true
     name: svc-pseudopods--init_sidecar.proxy.conf

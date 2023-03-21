@@ -33,7 +33,7 @@ services:
 
 configs:
   input-receiver.composefile:
-    file: ./setups/wsevent/svc-pseudopods/composefiles/app-input-receiver.yml
+    file: ./composefiles/app-input-receiver.yml
   sidecar.proxy.conf:
     external: true
     name: svc-pseudopods--init_sidecar.proxy.conf
