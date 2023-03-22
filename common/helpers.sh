@@ -1,6 +1,5 @@
 ## This file is intended to either be sourced in this project's scripts
 ## or directly by a user's bash.
-BASEDIR="$(dirname $0)"
 SWARM_NODE_PREFIX=${SWARM_NODE_PREFIX:-test}
 SWARM_SIZE=${SWARM_SIZE:-3}
 LOCALHOST=192.168.57.10
