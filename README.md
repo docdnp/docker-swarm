@@ -73,7 +73,7 @@ For sake of convenience you may also use some helper functions and bash completi
 Just execute:
 
 ```
-source common/helpers.sh
+source common/lib/private/helpers.sh
 stacks_manage setup basics
 ```
 
@@ -87,9 +87,9 @@ In case you want to setup a custom number of nodes and change the prefix, do as 
 
 ```
 source common/helpers.sh
-swarm_size_set 5
-prefix_set custom-prefix
-stacks_manage setup basics/20_swarm-cluster
+swarm set size 5
+swarm set prefix custom-prefix
+swarm stacks setup basics/20_swarm-cluster
 ```
 
 Listing the machines shows you 5 additional machines prefixed by `custom-prefix`:
@@ -116,7 +116,7 @@ Portainer can be helpful in order to check out what's happening in the Swarm clu
 Portainer itself is published as part of the swarm.
 It is installed as follows:
 ```
-stacks_manage setup portainer
+swarm stacks setup portainer
 ```
 
 The previous command prints the URL where you can access the Portainer UI.
@@ -277,7 +277,7 @@ Again it is a coincidence which path the data took depending on which service wa
 Dump all paths taken:
 
 ```
-swarm_prefixed_hosts  \
+swarm hosts  \
  | foreach docker-machine ssh {} -- \
     docker ps \
      \| grep -v proxy \
@@ -294,7 +294,7 @@ swarm_prefixed_hosts  \
 Dump all services involved:
 
 ```
-swarm_prefixed_hosts   \
+swarm hosts   \
  | foreach docker-machine ssh {} -- \
     docker ps \
      \| grep proxy \

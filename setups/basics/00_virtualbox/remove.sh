@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 [ "$1" == force ] || set -e
-source common/helpers.sh
+source common/lib/private/helpers.sh
 ensure_debian
 
 pgrep VBox* 2>&1 && sudo pkill VBox*

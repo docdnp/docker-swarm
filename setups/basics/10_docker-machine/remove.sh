@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 [ "$1" == force ] || set -e
-source common/helpers.sh
+source common/lib/private/helpers.sh
 ensure_command_exists docker-machine
 
 sudo rm -f /usr/local/bin/docker-machine

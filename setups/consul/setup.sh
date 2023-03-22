@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 [ "$1" == force ] || set -e
-source common/helpers.sh
+source common/lib/private/helpers.sh
 ensure_swarm_is_ready
 
 docker-machine use $(swarm_master)
@@ -13,7 +13,7 @@ docker network create -d overlay --attachable --scope swarm envoy
 docker stack deploy $DOCKERAUTH -c setups/consul/consul.yml envoy
 
 # install registrator
-swarm_prefixed_hosts | foreach-ssh 1 \
+__swarm_prefixed_hosts | foreach-ssh 1 \
     docker run \
         -d --name registrator \
         -v /var/run/docker.sock:/tmp/docker.sock \

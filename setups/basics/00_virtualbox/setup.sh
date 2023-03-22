@@ -2,7 +2,7 @@
 # see https://www.virtualbox.org/wiki/Linux_Downloads
 
 [ "$1" == force ] || set -e
-source common/helpers.sh
+source common/lib/private/helpers.sh
 ensure_debian
 
 VERSION_CODENAME=$(cat /etc/os-release | grep ^VER.*CO | sed 's|.*=||')

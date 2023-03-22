@@ -3,7 +3,7 @@
 
 [ "$1" == force ] || set -e
 
-source common/helpers.sh
+source common/lib/private/helpers.sh
 ensure_command_exists virtualbox
 ensure_command_exists curl
 ensure_command_exists wget
