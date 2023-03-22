@@ -32,13 +32,14 @@ contains              () { grep -E "$@" >&/dev/null; }
 count                 () { grep -c "$@" ; }
 
 # simple logging functions
-log_error                 () { echo "Error  : " "$@" ; }
-log_warning               () { echo "Warning: " "$@" ; }
-log_info                  () { echo "Info   : " "$@" ; }
-log_usage                 () { echo "Usage: " "$@" ; }
-log_error_exit            () { log_error "$@" ; exit 1; }
-log_hline                 () { echo "==================================================================="; }
-log_emphasize             () { log_hline; echo -e "$@"; log_hline; }
+log_error              () { printf "%-8s: " Error   ; echo -e "$@" ; }
+log_warning            () { printf "%-8s: " Warning ; echo -e "$@" ; }
+log_info               () { printf "%-8s: " Info    ; echo -e "$@" ; }
+log_exec               () { printf "%-8s: " Execute ; echo -e "$@" ; }
+log_usage              () { printf "%-8s: " Usage   ; echo -e "$@" ; }
+log_error_exit         () { log_error "$@" ; exit 1; }
+log_hline              () { echo "================================================================================"; }
+log_emphasize          () { log_hline; echo -e "$@"; log_hline; }
 
 # prefix handling
 prefix                () { local PREFIX=${1:-$SWARM_NODE_PREFIX}; sed -re "s/(.*)/$PREFIX-\1/"; }
@@ -92,7 +93,26 @@ virtual-box-host-ip   () { echo $LOCALHOST; }
 
 # ensure preconditions 
 # (ATTENTION: calls exit)
-ensure_command_exists () { command -v $1 >&/dev/null || log_error_exit "Please install $1 first."; }
+ensure_command_exists () { 
+ local action=install message="" log=log_error_exit
+ local installed=$(command -v $1 >&/dev/null && echo true || echo false)
+ 
+ [[ "$2" =~ ^(--)ensure-missing$ ]] \
+  && action=remove log=log_error_exit \
+  && message="Nothing to do. \"$1\" was found. Returning."
+  
+  $installed && {
+    [ "$action" == remove ] \
+        &&   message="Please remove \"$1\"." \
+        || { message="OK. \"$1\" was found."; log=log_info; }
+  } || {
+    [ "$action" == remove ] \
+        && { message="OK. \"$1\" wasn't found."; log=log_info; } \
+        ||   message="Please install \"$1\"."
+  }
+  $log "$message"
+}
+    
 ensure_debian         () { grep ^ID.*debian /etc/os-release >& /dev/null || log_error_exit "This script is meant to be run on debian-like distributions." ; }
 ensure_swarm_is_ready () {
     ensure_command_exists docker-machine
@@ -124,7 +144,8 @@ stacks_manage () {
         return 0
     }
     find setups -name $1.sh | sort | grep "$basedir" \
-        | foreach bash -c "source common/helpers.sh; log_emphasize Calling: {} $composefile $3; {} $basedir $composefile $3"
+        | foreach bash -c "source common/helpers.sh; log_emphasize Calling: {} $composefile $3; {} $basedir $composefile $3" || return 1
+    return 0
 }
 stacks_list   () { local p='\1'; [ "$1" == / ] && p='\1\n\1/'; find setups -name setup.sh | sed -re 's|^./\|/setup.sh||g' -e 's|^(.*)$|'"$p"'|'; }
 
@@ -141,7 +162,7 @@ __stacks_manage () {
     }
     [ "$COMP_CWORD" == 2 ] && [[ "$PWORD" =~ ^ls$ ]] && return
     [ "$COMP_CWORD" == 2 ] && [[ "$PWORD" =~ ^remove|redeploy$ ]] && {
-        local CANDIDATES="$(stacks_manage ls) $(stacks_list)"
+        local CANDIDATES="$(echo -e $(stacks_manage ls) $(stacks_list) | tr ' ' '\n')"
         COMPREPLY=($(compgen -W "$CANDIDATES"  -- "$WORD" ))
         return
     }
@@ -184,96 +205,88 @@ pnhelp () {
 }
 
 # setup and remove stacks and local compose deployments
+foreach-exec () {
+    local A
+    while read A; do 
+        bash -c "echo \"Execute : $A\"; $A" || return 1
+    done
+}
+
 __stacks_setup () {
-    docker-machine use $(swarm_master)
-    local PROJECT="$(basename $BASEDIR)" A
-    rm -f /tmp/$PROJECT 
-    for-swarm-configs "$@" \
-        | foreach echo docker stack deploy $DOCKERAUTH -c {} \
-                $PROJECT--$\(basename {} .yml \| sed -re "'s|^[0-9]+-\\\\|-.*||g'" \) \
-            | while read A; do 
-                bash -c "echo -e \"Executing: $A\"" 
-                bash -c "$A" || { 
-                    touch /tmp/$PROJECT
-                    break
-                }
-              done
-    [ -e /tmp/$PROJECT ] && rm /tmp/$PROJECT && return 1
-    return 0
+ log_info Setting up swarm service stacks
+ log_info triggered by: "$@"
+ docker-machine use $(swarm_master)
+ local PROJECT="$(basename $BASEDIR)" A
+ for-swarm-configs "$@" \
+     | foreach echo docker stack deploy $DOCKERAUTH -c {} \
+             $PROJECT--$\(basename {} .yml \| sed -re "'s|^[0-9]+-\\\\|-.*||g'" \) \
+         | foreach-exec
 }
 
 __compose_setup () {
-    docker-machine use $(swarm_master)
-    local PROJECT="$(basename $BASEDIR)" A
-    rm -f /tmp/$PROJECT 
-    docker-machine use --unset
-    for-compose-configs "$@" \
-        | foreach echo "docker-compose -f {} up -d" \
-            | while read A; do 
-                bash -c "echo -e \"Executing: $A\"" 
-                bash -c "$A" || { 
-                    touch /tmp/$PROJECT
-                    break
-                }
-              done
-    [ -e /tmp/$PROJECT ] && rm /tmp/$PROJECT && return 1
-    return 0
+ log_info Setting up local compose services
+ log_info triggered by: "$@"
+ docker-machine use $(swarm_master)
+ local PROJECT="$(basename $BASEDIR)" A
+ docker-machine use --unset
+ for-compose-configs "$@" \
+     | foreach echo "docker-compose -f {} up -d" \
+            | foreach-exec
 }
 
 
 __remove-all-stacks () {
-    docker-machine use $(swarm_master)
-    local PROJECT="$(basename $BASEDIR)" A
-    rm -f /tmp/$PROJECT 
-    for-swarm-configs -r "$@" \
-        | foreach echo docker stack rm \
-            $PROJECT--\$\(basename {} .yml \| sed -re "'s|^[0-9]+-\\\\|-.*||g'" \) \
-        | while read A; do 
-            bash -c "echo -e \"Executing: $A\"" 
-            bash -c "$A" || { 
-                touch /tmp/$PROJECT
-                break
-            }
-          done
-    [ -e /tmp/$PROJECT ] && rm /tmp/$PROJECT && return 1
-    return 0
+ docker-machine use $(swarm_master)
+ local PROJECT="$(basename $BASEDIR)" A
+ for-swarm-configs -r "$@" \
+     | foreach echo docker stack rm \
+         $PROJECT--\$\(basename {} .yml \| sed -re "'s|^[0-9]+-\\\\|-.*||g'" \) \
+            | foreach-exec
 }
 
 __stacks_remove () {
+    log_info Removing swarm service stacks
+    log_info triggered by: "$@"
     for i in {1..10} ; do
-        [ $i == 0 ] \
+        [ $i == 1 ] \
             || log_emphasize "WARN: Failed to remove stack... [RETRY ($i/10)]"
-        __remove-all-stacks "$@" && sleep 1 \
-            && __remove-all-stacks "$@" >&/dev/null \
-            && return 0
+        __remove-all-stacks "$@" && return 0
         sleep $i
     done
     return 1
 }
 
 __compose_remove () {
+    log_info Removing local compose services
+    log_info triggered by: "$@"
     local PROJECT="$(basename $BASEDIR)"
     docker-machine use --unset
     for-compose-configs "$@" \
         | foreach echo "docker-compose -f {} down --remove-orphans" \
-        | while read A; do bash -c "$A" || { touch /tmp/$PROJECT; break; }; done
-    [ -e /tmp/$PROJECT ] && rm /tmp/$PROJECT && return 1
-    return 0
+            | foreach-exec
 }
 
 project-setup () { 
     [ -n "$1" ] && [ -f "$1/$2" ] && BASEDIR=$1
     PROJECT="$(basename $BASEDIR)"
-    echo Setting up project: $PROJECT "$@"
-    __stacks_setup "$@" && __compose_setup "$@" \
-        || log_emphasize "FAIL: Couldn't setup project: $PROJECT $@" \
-        && return 1
+    log_info Setting up project: $PROJECT
+    log_info triggered by: "$@"
+    if __stacks_setup "$@" && __compose_setup "$@" ; then
+        echo ; log_emphasize "SUCCESS : Stacks of \"$PROJECT\" were deployed sucessfully."
+        return 0
+    fi
+    log_emphasize "FAIL    : Couldn't setup project: $PROJECT"
+    return 1
 }
 project-remove () {
     [ -n "$1" ] && [ -f "$1/$2" ] && BASEDIR=$1
     PROJECT="$(basename $BASEDIR)"
-    echo Removing project: $PROJECT "$@"
-    __stacks_remove "$@" && __compose_remove "$@" \
-        || log_emphasize "FAIL: Couldn't remove project: $PROJECT $@" \
-        && return 1
+    log_info Removing project: $PROJECT
+    log_info triggered by: "$@"
+    if __stacks_remove "$@" && __compose_remove "$@" ; then
+        echo ; log_emphasize "SUCCESS: Stacks of \"$PROJECT\" were removed sucessfully."
+        return 0
+    fi
+    log_emphasize "FAIL    : Couldn't remove project: $PROJECT"
+    return 1
 }
