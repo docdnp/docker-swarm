@@ -139,7 +139,7 @@ pnhelp () {
     echo
     echo "   declare -f <function-name>"
 
-    grep -hv ^[[:blank:]] common/lib/stack-manage.sh common/lib/format-and-filters.sh\
+    grep -hv ^[[:blank:]] common/lib/stack-manage.sh common/lib/format-and-filters.sh common/lib/pipeable-loops.sh\
         | grep -Ev '^([_\{\}A-Z]|complete|shopt|export|source|##)' \
         | sed -re 's|\(\).*\|alias \|=.*||g' \
                -e '/^$/d' \

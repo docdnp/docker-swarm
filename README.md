@@ -73,11 +73,51 @@ For sake of convenience you may also use some helper functions and bash completi
 Just execute:
 
 ```
-source common/lib/private/helpers.sh
-stacks_manage setup basics
+source common/helpers.sh
+swarm stacks setup basics
 ```
 
-To see what helper functions are available use `pnhelp`.
+To see what helper functions are available just use `swarm`.
+It provides you a help message, and supports also auto completion for the bash:
+
+```
+Usage: swarm <subcmd> [args]
+
+  Subcommands:
+    get    (prefix|size)    get the cluster node prefix or the number of nodes
+    set    (prefix|size)    set the cluster node prefix or the number of nodes
+    hosts                   get the names of the of the cluster nodes
+    start  <node-name>      start a given node
+    stop   <node-name>      stop a given node
+    status                  dump a simple overview status of node clusters
+    auth                    register cluster to your docker hub account
+    ips    (all|<node-num>) returns the number IPs of all or given cluster nodes
+    stack  <subcmd>         setup, deploy, redeploy or list your service stacks
+```
+
+Additionally you can also make use of some little shell helper functions that allow to conveniently loop within pipe chains or filter and modify expressions.
+Type `pnhelp` for further information:
+
+```
+The following list contains functions which are exposed by sourcing common/helpers.sh.
+In case you want to know more about a function call:
+
+   declare -f <function-name>
+
+# -----------------------
+# handling service stacks
+
+# -----------------------
+# simple converters and filters
+to_list               
+to_string             
+to_or_rexp            
+contains              
+count                 
+foreach
+foreach-ssh 
+foreach-exec 
+```
 
 **In all following steps we will assume that you've sourced the helper functions.**
 
@@ -150,7 +190,7 @@ We have five services building a pipeline, that starts and ends on your machine:
 Deploy this setup, via:
 
 ```
-stacks_manage setup setups/wsevent/svc-simple
+swarm stacks setup setups/wsevent/svc-simple
 ```
 
 The previous command tells you how to start the destintation service which consumes the output stream of `dack-sender`:
