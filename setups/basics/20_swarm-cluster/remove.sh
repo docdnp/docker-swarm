@@ -7,4 +7,4 @@ ensure_command_exists docker-machine
 docker-machine ls \
     | grep -E $(__swarm_prefixed_hosts | to_string | to_or_rexp) \
     | awk '{print $1}'   \
-    | xargs -n1 docker-machine rm -y 
+    | xargs -i bash -c "[ -z '{}'] && echo Nothing to do. || docker-machine rm -y {}" 

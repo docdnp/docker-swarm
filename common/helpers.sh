@@ -98,15 +98,12 @@ local PWORD="${COMP_WORDS[$((POS-1))]}"
 
 [ x$NWORD == xstacks ] && [ $POS -gt 2 ] && PWORD=$NWORD
 [ x$NWORD == xauth ]   && [ $POS -gt 2 ] && PWORD=$NWORD
+[[ "$NWORD" =~ ^set|get$ ]]   && [ $POS -gt 2 ] && return
 
 case $PWORD in
-    get) case $WORD in
+    set|get) case $WORD in
             prefix|size);;
             *) COMPREPLY=($(compgen -W "$(echo -e 'prefix\nsize')"  -- "$WORD" ));;
-         esac ;;
-    set) case $WORD in
-            prefix) shift 2; __prefix_set     "$@"     ;;
-            size)   shift 2; __swarm_size_set "$@"     ;;
          esac ;;
     hosts)  [ $POS -lt 2 ] && __swarm_prefixed_hosts   ;;
     start)  [ $POS -lt 2 ] && __swarm_start            ;;
