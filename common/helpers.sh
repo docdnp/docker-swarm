@@ -52,7 +52,7 @@ case $subcmd in
          esac ;;
     hosts)  __swarm_prefixed_hosts                     ;;
     start)  __swarm_start                              ;;
-    start)  __swarm_stop                               ;;
+    stop)   __swarm_stop                               ;;
     status) __docker-machine ls                        ;;
     auth)   shift; __swarm_docker_auth "$@"            ;;
     ips) case $arg in          
