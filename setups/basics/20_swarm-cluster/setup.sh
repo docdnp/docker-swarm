@@ -4,7 +4,7 @@ source common/lib/private/helpers.sh
 ensure_command_exists docker-machine
 
 __swarm_prefixed_hosts \
-    | xargs -i docker-machine create -d virtualbox --engine-label type={} --virtualbox-hostonly-cidr $LOCALHOST/24 {}
+    | xargs -i docker-machine create -d virtualbox $(running_in_wsl && echo --virtualbox-cpu-count "2") --engine-label type={} --virtualbox-hostonly-cidr $LOCALHOST/24 {}
 
 docker-machine use $(swarm_master)
 docker swarm init --advertise-addr $(node_ips | head -1)
